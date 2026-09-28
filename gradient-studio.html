@@ -249,7 +249,7 @@ body.mode-consumer .admin-only{display:none!important}
     <div class="mode-toggle" id="modeToggleTrack">
       <div class="mode-toggle-slider" id="modeSlider"></div>
       <button class="mode-toggle-opt active" id="modeOptConsumer" onclick="onModeOptClick('consumer')">Generator</button>
-      <button class="mode-toggle-opt" id="modeOptAdmin" onclick="onModeOptClick('admin')">Creator <svg width="9" height="10" viewBox="0 0 9 10" fill="none" style="display:inline-block;vertical-align:-1px"><rect x="1" y="4" width="7" height="6" rx="1.2" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 4V2.8a2 2 0 014 0V4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
+      <button class="mode-toggle-opt" id="modeOptAdmin" onclick="onModeOptClick('admin')">Creator</button>
     </div>
   </div>
   <div class="sidebar-scroll">
@@ -511,21 +511,9 @@ function updateModeToggle(){
   document.getElementById('modeOptConsumer').classList.toggle('active',appMode==='consumer');
   document.getElementById('modeOptAdmin').classList.toggle('active',appMode==='admin');
 }
-function onModeOptClick(mode){
-  if(mode===appMode)return;
-  if(mode==='admin'){
-    document.getElementById('adminModalBackdrop').classList.add('open');
-    document.getElementById('adminPwInput').value='';
-    document.getElementById('adminPwError').classList.remove('show');
-    setTimeout(()=>document.getElementById('adminPwInput').focus(),50);
-  }else{
-    setMode('consumer');render();
-  }
-}
-function closeAdminModal(){document.getElementById('adminModalBackdrop').classList.remove('open');}
+function onModeOptClick(mode){if(mode===appMode)return;setMode(mode);render();}
+function closeAdminModal(){}
 function checkAdminPassword(){
-  if(document.getElementById('adminPwInput').value===ADMIN_PASSWORD){closeAdminModal();setMode('admin');render();}
-  else{document.getElementById('adminPwError').classList.add('show');}
 }
 
 // ── Noise ──
