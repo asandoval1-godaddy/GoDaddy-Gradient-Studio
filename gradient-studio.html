@@ -120,7 +120,7 @@ input[type=color]{width:28px;height:24px;border-radius:5px;border:1px solid rgba
 #codeBtn:hover{background:#333}
 #motionPlayBtn{position:absolute;top:16px;right:110px;z-index:40;display:none;align-items:center;gap:5px;padding:7px 14px;background:rgba(255,255,255,0.92);color:#111;border:1px solid rgba(0,0,0,0.12);border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,0.12);backdrop-filter:blur(6px);transition:all .15s}
 #motionPlayBtn:hover{background:#fff;box-shadow:0 2px 16px rgba(0,0,0,0.18)}
-#motionPlayBtn.show{display:flex}
+body.mode-admin #motionPlayBtn{display:flex}
 #motionPlayBtn.playing{background:#111;color:#fff;border-color:#111}
 #canvas{position:relative;border-radius:16px;overflow:visible;flex-shrink:0}
 #canvas-inner{position:absolute;inset:0;border-radius:16px;overflow:hidden}
@@ -302,28 +302,14 @@ body.mode-consumer .admin-only{display:none!important}
 
     <div class="section admin-only" data-section="motion">
       <div class="section-label">Motion<span class="section-chevron">▾</span></div>
-      <div class="motion-mode-group">
-        <button class="motion-mode-btn active" id="mmOff" onclick="setMotionMode('off')">Off</button>
-        <button class="motion-mode-btn" id="mmAmbient" onclick="setMotionMode('ambient')">Ambient</button>
-        <button class="motion-mode-btn" id="mmTimeline" onclick="setMotionMode('timeline')">Timeline</button>
+      <div class="knob"><div class="knob-row"><span class="knob-label">Speed</span><span class="knob-value" id="motionSpeedVal">1.0×</span></div><input type="range" id="motionSpeedSlider" min="0.1" max="4.0" step="0.1" value="1.0"></div>
+      <div class="knob"><div class="knob-row"><span class="knob-label">Amplitude</span><span class="knob-value" id="motionAmpVal">3.5%</span></div><input type="range" id="motionAmpSlider" min="0.5" max="15" step="0.5" value="3.5"></div>
+      <div class="knob"><div class="knob-row"><span class="knob-label">Loop</span><span class="knob-value" id="ambientLoopVal">5s</span></div><input type="range" id="ambientLoopSlider" min="1" max="30" step="0.5" value="5"></div>
+      <div class="tl-playback" style="margin-top:8px">
+        <button class="tl-play-btn" id="tlAmbientPlayBtn" onclick="togglePlay()">▶ Play</button>
       </div>
-      <div id="ambientKnobs">
-        <div class="knob"><div class="knob-row"><span class="knob-label">Speed</span><span class="knob-value" id="motionSpeedVal">1.0×</span></div><input type="range" id="motionSpeedSlider" min="0.1" max="4.0" step="0.1" value="1.0"></div>
-        <div class="knob"><div class="knob-row"><span class="knob-label">Amplitude</span><span class="knob-value" id="motionAmpVal">3.5%</span></div><input type="range" id="motionAmpSlider" min="0.5" max="15" step="0.5" value="3.5"></div>
-        <div class="knob" style="margin-bottom:0"><div class="knob-row"><span class="knob-label">Loop</span><span class="knob-value" id="ambientLoopVal">5s</span></div><input type="range" id="ambientLoopSlider" min="1" max="30" step="0.5" value="5"></div>
-        <div class="tl-playback" style="margin-top:8px">
-          <button class="tl-play-btn" id="tlAmbientPlayBtn" onclick="togglePlay()">▶ Play</button>
-        </div>
-      </div>
-      <div id="timelineKnobs">
-        <div class="knob"><div class="knob-row"><span class="knob-label">Duration</span><span class="knob-value" id="animDurVal">4s</span></div><input type="range" id="animDurSlider" min="1" max="20" step="0.5" value="4"></div>
-        <div class="tl-playback">
-          <button class="tl-play-btn" id="tlSidePlayBtn" onclick="togglePlay()">▶ Play</button>
-          <button class="tl-add-kf" id="tlAddKfBtn" onclick="addKeyframe()">+ Keyframe</button>
-        </div>
-      </div>
-      <div id="motionExports" style="display:none">
-        <div class="motion-export-row">
+      <div id="motionExports">
+        <div class="motion-export-row" style="margin-top:8px">
           <button class="motion-export-btn" onclick="exportMotionCSS()">↗ Export CSS</button>
           <button class="motion-export-btn" id="webmExportBtn" onclick="exportWebM()">⬇ Export WebM</button>
         </div>
@@ -369,20 +355,6 @@ body.mode-consumer .admin-only{display:none!important}
   <div class="canvas-area">
     <div class="canvas-stack">
       <div id="canvas"><div id="canvas-inner"><canvas id="previewCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;border-radius:16px"></canvas><canvas id="pathOverlay" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:6;display:none;pointer-events:none;border-radius:16px"></canvas><div id="noiseLayer"></div></div></div>
-      <div id="timelineBar">
-        <div class="tl-top">
-          <span class="tl-time-disp" id="tlTimeDisp">0.0s</span>
-          <div class="tl-track-wrap" id="tlTrackWrap">
-            <div class="tl-track"><div class="tl-track-fill" id="tlFill"></div></div>
-            <div class="tl-playhead" id="tlPlayhead"></div>
-          </div>
-          <span class="tl-dur-disp" id="tlDurDisp">/ 4s</span>
-        </div>
-        <div class="tl-bottom">
-          <button class="tl-kf-del" id="tlKfDelBtn" onclick="deleteSelectedKeyframe()">✕ Delete keyframe</button>
-          <button class="tl-export-css-btn" onclick="exportMotionCSS()">Export CSS</button>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -739,27 +711,22 @@ function animTick(ts){
   animRafHandle=requestAnimationFrame(animTick);
 }
 function syncPlayBtns(playing){
-  ['tlSidePlayBtn','tlAmbientPlayBtn'].forEach(id=>{const b=document.getElementById(id);if(b){b.textContent=playing?'⏸ Pause':'▶ Play';b.classList.toggle('playing',playing);}});
+  const b=document.getElementById('tlAmbientPlayBtn');if(b){b.textContent=playing?'⏸ Pause':'▶ Play';b.classList.toggle('playing',playing);}
   const pb=document.getElementById('motionPlayBtn');if(pb){pb.textContent=playing?'⏸ Pause':'▶ Play motion';pb.classList.toggle('playing',playing);}
 }
 function startAnim(){
-  if(animPlaying)return;animPlaying=true;animLastTs=performance.now();
+  if(animPlaying)return;motionMode='ambient';animPlaying=true;animLastTs=performance.now();
   animRafHandle=requestAnimationFrame(animTick);syncPlayBtns(true);
 }
 function stopAnim(){
-  animPlaying=false;if(animRafHandle){cancelAnimationFrame(animRafHandle);animRafHandle=null;}
+  animPlaying=false;motionMode='off';if(animRafHandle){cancelAnimationFrame(animRafHandle);animRafHandle=null;}
   syncPlayBtns(false);
 }
 function togglePlay(){if(animPlaying)stopAnim();else startAnim();}
 function setMotionMode(mode){
+  // Timeline mode no longer exists — treat it as ambient
+  if(mode==='timeline')mode='ambient';
   stopAnim();motionMode=mode;animTime=0;
-  ['off','ambient','timeline'].forEach(m=>document.getElementById('mm'+m.charAt(0).toUpperCase()+m.slice(1)).classList.toggle('active',m===mode));
-  document.getElementById('ambientKnobs').classList.toggle('show',mode==='ambient');
-  document.getElementById('timelineKnobs').classList.toggle('show',mode==='timeline');
-  document.getElementById('timelineBar').classList.toggle('show',mode==='timeline');
-  const pb=document.getElementById('motionPlayBtn');if(pb)pb.classList.toggle('show',mode!=='off');
-  const ex=document.getElementById('motionExports');if(ex)ex.style.display=mode!=='off'?'block':'none';
-  if(mode==='off'){selectedKfIdx=null;document.getElementById('tlKfDelBtn').classList.remove('show');}
   render();drawPathOverlay();
 }
 
@@ -1181,18 +1148,9 @@ function initCollapsibleSections(){
 
 // ── Sync motion controls ──
 function syncMotionControls(){
-  ['off','ambient','timeline'].forEach(m=>document.getElementById('mm'+m.charAt(0).toUpperCase()+m.slice(1)).classList.toggle('active',m===motionMode));
-  document.getElementById('ambientKnobs').classList.toggle('show',motionMode==='ambient');
-  document.getElementById('timelineKnobs').classList.toggle('show',motionMode==='timeline');
-  document.getElementById('timelineBar').classList.toggle('show',motionMode==='timeline');
-  const pb=document.getElementById('motionPlayBtn');if(pb)pb.classList.toggle('show',motionMode!=='off');
-  const ex=document.getElementById('motionExports');if(ex)ex.style.display=motionMode!=='off'?'block':'none';
   document.getElementById('motionSpeedSlider').value=motionSpeed;document.getElementById('motionSpeedVal').textContent=motionSpeed.toFixed(1)+'×';
   document.getElementById('motionAmpSlider').value=motionAmplitude;document.getElementById('motionAmpVal').textContent=motionAmplitude.toFixed(1)+'%';
   document.getElementById('ambientLoopSlider').value=ambientLoopDuration;document.getElementById('ambientLoopVal').textContent=ambientLoopDuration+'s';
-  document.getElementById('animDurSlider').value=animDuration;document.getElementById('animDurVal').textContent=animDuration+'s';
-  document.getElementById('tlDurDisp').textContent='/ '+animDuration+'s';
-  renderTimelineKeyframes();
 }
 
 // Init
