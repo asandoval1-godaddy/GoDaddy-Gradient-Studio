@@ -1130,7 +1130,6 @@ document.getElementById('motionAmpSlider').addEventListener('input',e=>{
   drawPathOverlay();
 });
 document.getElementById('ambientLoopSlider').addEventListener('input',e=>{ambientLoopDuration=parseFloat(e.target.value);document.getElementById('ambientLoopVal').textContent=ambientLoopDuration+'s';});
-document.getElementById('animDurSlider').addEventListener('input',e=>{animDuration=parseFloat(e.target.value);document.getElementById('animDurVal').textContent=animDuration+'s';document.getElementById('tlDurDisp').textContent='/ '+animDuration+'s';});
 
 // ── Collapsible sections ──
 function initCollapsibleSections(){
