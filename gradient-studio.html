@@ -290,7 +290,8 @@ body.mode-consumer .admin-only{display:none!important}
           </select>
         </div>
         <div class="knob"><div class="knob-row"><span class="knob-label">Opacity</span><span class="knob-value" id="noiseOpacityVal">12%</span></div><input type="range" id="noiseOpacitySlider" min="0" max="1" step="0.01" value="0.12" oninput="onNoiseChange()"></div>
-        <div class="knob" style="margin-bottom:0"><div class="knob-row"><span class="knob-label">Size</span><span class="knob-value" id="noiseSizeVal">0.65</span></div><input type="range" id="noiseSizeSlider" min="0.10" max="20" step="0.10" value="0.65" oninput="onNoiseChange()"></div>
+        <div class="knob"><div class="knob-row"><span class="knob-label">Size</span><span class="knob-value" id="noiseSizeVal">0.65</span></div><input type="range" id="noiseSizeSlider" min="0.10" max="20" step="0.10" value="0.65" oninput="onNoiseChange()"></div>
+        <div class="knob" style="margin-bottom:0"><div class="knob-row"><span class="knob-label">Density</span><span class="knob-value" id="noiseDensityVal">1.0×</span></div><input type="range" id="noiseDensitySlider" min="0.1" max="5" step="0.1" value="1.0" oninput="onNoiseChange()"></div>
       </div>
     </div>
 
@@ -455,7 +456,7 @@ let bgColor='#ffffff',globalScale=1.0,globalOpacity=0.80,globalWarp=0,globalAngl
 let canvasW=713,canvasH=543;
 let activeDotId=null,nextId=1,wasDragged=false,dragSrcIdx=null,dragOverIdx=null;
 let activePresetIdx=null,refineMode=false,editingPresetIdx=null,dotsVisible=true;
-let noiseEnabled=false,noiseOpacity=0.12,noiseSize=0.65,noiseBlend='overlay';
+let noiseEnabled=false,noiseOpacity=0.12,noiseSize=0.65,noiseBlend='overlay',noiseDensity=1.0;
 let exportScale=1;
 const ADMIN_PASSWORD='Admin';
 let appMode='consumer';
@@ -486,7 +487,7 @@ dots.forEach(seedAmbientParams);
 let presets=[];
 function loadPresets(){try{const s=JSON.parse(localStorage.getItem('gstudio-presets')||'null');if(Array.isArray(s)&&s.length>0){presets=s;const del=JSON.parse(localStorage.getItem('gstudio-deleted-builtins')||'[]');BUILTIN_PRESETS.forEach(bp=>{if(!presets.some(p=>p.name===bp.name)&&!del.includes(bp.name))presets.push({...bp,dots:bp.dots.map(d=>({...d}))});});savePresetsToStorage();return;}}catch(e){}presets=BUILTIN_PRESETS.map(p=>({...p,dots:p.dots.map(d=>({...d}))}));savePresetsToStorage();}
 function savePresetsToStorage(){localStorage.setItem('gstudio-presets',JSON.stringify(presets));}
-function captureCurrentAsPreset(name,existing){return{name,bg:bgColor,scale:globalScale,opacity:globalOpacity,warp:globalWarp,angle:globalAngle,blur:globalBlur,noise:noiseEnabled,noiseOpacity,noiseSize,noiseBlend,dots:dots.map(d=>({hex:d.hex,x:d.x,y:d.y,opacity:d.opacity,spread:d.spread,warp:d.warp,angle:d.angle??0,choke:d.choke??0,_cp1x:d._cp1x,_cp1y:d._cp1y,_cp2x:d._cp2x,_cp2y:d._cp2y})),location:existing?.location||'',notes:existing?.notes||'',status:existing?.status||null};}
+function captureCurrentAsPreset(name,existing){return{name,bg:bgColor,scale:globalScale,opacity:globalOpacity,warp:globalWarp,angle:globalAngle,blur:globalBlur,noise:noiseEnabled,noiseOpacity,noiseSize,noiseBlend,noiseDensity,dots:dots.map(d=>({hex:d.hex,x:d.x,y:d.y,opacity:d.opacity,spread:d.spread,warp:d.warp,angle:d.angle??0,choke:d.choke??0,_cp1x:d._cp1x,_cp1y:d._cp1y,_cp2x:d._cp2x,_cp2y:d._cp2y})),location:existing?.location||'',notes:existing?.notes||'',status:existing?.status||null};}
 
 function hexToRgb(hex){const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);return m?{r:parseInt(m[1],16),g:parseInt(m[2],16),b:parseInt(m[3],16)}:{r:200,g:200,b:200};}
 function getCanvasSize(){const el=document.querySelector('.canvas-area');const st=getComputedStyle(el);const aw=el.clientWidth-parseFloat(st.paddingLeft)-parseFloat(st.paddingRight);let ah=el.clientHeight-parseFloat(st.paddingTop)-parseFloat(st.paddingBottom);if(motionMode==='timeline')ah=Math.max(100,ah-70);const s=Math.min(aw/canvasW,ah/canvasH,1);return{w:Math.floor(canvasW*s),h:Math.floor(canvasH*s)};}
@@ -523,12 +524,12 @@ function buildNoiseSVG(w,h){
   // Technique from daniel.do/article/making-noisy-svgs:
   // feComposite clips noise to the source alpha, feColorMatrix luminanceToAlpha
   // converts noise brightness into alpha → film-grain bright speckles on white base
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><filter id="n" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="${fx} ${fy}" numOctaves="10" stitchTiles="stitch" result="noise"/><feComposite operator="in" in="noise" in2="SourceAlpha" result="clipped"/><feColorMatrix type="luminanceToAlpha" in="clipped"/></filter><rect width="100%" height="100%" fill="white" filter="url(#n)"/></svg>`;
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><filter id="n" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="${fx} ${fy}" numOctaves="10" stitchTiles="stitch" result="noise"/><feComposite operator="in" in="noise" in2="SourceAlpha" result="clipped"/><feColorMatrix type="luminanceToAlpha" in="clipped" result="alphaNoise"/><feComponentTransfer in="alphaNoise"><feFuncA type="linear" slope="${noiseDensity.toFixed(2)}" intercept="0"/></feComponentTransfer></filter><rect width="100%" height="100%" fill="white" filter="url(#n)"/></svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 function applyNoiseLayer(){const l=document.getElementById('noiseLayer');if(!noiseEnabled){l.style.display='none';return;}const{w,h}=getCanvasSize();l.style.display='block';l.style.background=buildNoiseSVG(w,h);l.style.backgroundSize='100% 100%';l.style.opacity=noiseOpacity.toFixed(2);l.style.mixBlendMode=noiseBlend;}
-function toggleNoise(){noiseEnabled=!noiseEnabled;const btn=document.getElementById('noiseToggleBtn');btn.textContent=noiseEnabled?'On':'Off';btn.classList.toggle('on',noiseEnabled);document.getElementById('noiseKnobs').classList.toggle('knobs-disabled',!noiseEnabled);['blendSelect','noiseOpacitySlider','noiseSizeSlider'].forEach(id=>document.getElementById(id).disabled=!noiseEnabled);applyNoiseLayer();updateCSSOutput();}
-function onNoiseChange(){noiseBlend=document.getElementById('blendSelect').value;noiseOpacity=parseFloat(document.getElementById('noiseOpacitySlider').value);noiseSize=parseFloat(document.getElementById('noiseSizeSlider').value);document.getElementById('noiseOpacityVal').textContent=Math.round(noiseOpacity*100)+'%';document.getElementById('noiseSizeVal').textContent=noiseSize.toFixed(1);applyNoiseLayer();updateCSSOutput();}
+function toggleNoise(){noiseEnabled=!noiseEnabled;const btn=document.getElementById('noiseToggleBtn');btn.textContent=noiseEnabled?'On':'Off';btn.classList.toggle('on',noiseEnabled);document.getElementById('noiseKnobs').classList.toggle('knobs-disabled',!noiseEnabled);['blendSelect','noiseOpacitySlider','noiseSizeSlider','noiseDensitySlider'].forEach(id=>document.getElementById(id).disabled=!noiseEnabled);applyNoiseLayer();updateCSSOutput();}
+function onNoiseChange(){noiseBlend=document.getElementById('blendSelect').value;noiseOpacity=parseFloat(document.getElementById('noiseOpacitySlider').value);noiseSize=parseFloat(document.getElementById('noiseSizeSlider').value);noiseDensity=parseFloat(document.getElementById('noiseDensitySlider').value);document.getElementById('noiseOpacityVal').textContent=Math.round(noiseOpacity*100)+'%';document.getElementById('noiseSizeVal').textContent=noiseSize.toFixed(1);document.getElementById('noiseDensityVal').textContent=noiseDensity.toFixed(1)+'×';applyNoiseLayer();updateCSSOutput();}
 
 // ── CSS ──
 function buildLayers(forOutput){return dots.map(dot=>{const{r,g,b}=hexToRgb(dot.hex);const alpha=Math.min(1,+(dot.opacity*globalOpacity).toFixed(2));const w=dot.warp!==undefined?dot.warp:globalWarp;const sx=Math.round(dot.spread*globalScale*78*(1+w*0.6));const sy=Math.round(dot.spread*globalScale*66*(1-w*0.4));const pos=rotatePoint(dot.x,dot.y,globalAngle);const choke=dot.choke??0;const chokeStop=choke>0?` rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)}) ${Math.round(choke*100)}%,`:'';const layer=`radial-gradient(ellipse ${sx}% ${sy}% at ${pos.x.toFixed(1)}% ${pos.y.toFixed(1)}%, rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)}) 0%,${chokeStop} rgba(${r}, ${g}, ${b}, 0) 100%)`;return forOutput?'    '+layer:layer;});}
@@ -1066,8 +1067,8 @@ function renderPresets(){
     list.appendChild(wrap);
   });
 }
-function syncNoiseControls(){const btn=document.getElementById('noiseToggleBtn');btn.textContent=noiseEnabled?'On':'Off';btn.classList.toggle('on',noiseEnabled);document.getElementById('noiseKnobs').classList.toggle('knobs-disabled',!noiseEnabled);['blendSelect','noiseOpacitySlider','noiseSizeSlider'].forEach(id=>document.getElementById(id).disabled=!noiseEnabled);document.getElementById('blendSelect').value=noiseBlend;document.getElementById('noiseOpacitySlider').value=noiseOpacity;document.getElementById('noiseOpacityVal').textContent=Math.round(noiseOpacity*100)+'%';document.getElementById('noiseSizeSlider').value=noiseSize;document.getElementById('noiseSizeVal').textContent=noiseSize.toFixed(1);}
-function applyPreset(idx){if(activePresetIdx===idx){activePresetIdx=null;refineMode=false;renderPresets();return;}pushHistory();const p=presets[idx];bgColor=p.bg;globalScale=p.scale;globalOpacity=p.opacity;globalWarp=p.warp??0;globalAngle=p.angle??0;globalBlur=p.blur??0;dots=p.dots.map(d=>({...d,id:uid()}));dots.forEach(seedAmbientParams);if(p.noise!==undefined){noiseEnabled=p.noise;noiseOpacity=p.noiseOpacity??0.12;noiseSize=p.noiseSize??0.65;noiseBlend=p.noiseBlend??'overlay';syncNoiseControls();}activePresetIdx=idx;refineMode=false;activeDotId=null;syncControls();render();}
+function syncNoiseControls(){const btn=document.getElementById('noiseToggleBtn');btn.textContent=noiseEnabled?'On':'Off';btn.classList.toggle('on',noiseEnabled);document.getElementById('noiseKnobs').classList.toggle('knobs-disabled',!noiseEnabled);['blendSelect','noiseOpacitySlider','noiseSizeSlider','noiseDensitySlider'].forEach(id=>document.getElementById(id).disabled=!noiseEnabled);document.getElementById('blendSelect').value=noiseBlend;document.getElementById('noiseOpacitySlider').value=noiseOpacity;document.getElementById('noiseOpacityVal').textContent=Math.round(noiseOpacity*100)+'%';document.getElementById('noiseSizeSlider').value=noiseSize;document.getElementById('noiseSizeVal').textContent=noiseSize.toFixed(1);document.getElementById('noiseDensitySlider').value=noiseDensity;document.getElementById('noiseDensityVal').textContent=noiseDensity.toFixed(1)+'×';}
+function applyPreset(idx){if(activePresetIdx===idx){activePresetIdx=null;refineMode=false;renderPresets();return;}pushHistory();const p=presets[idx];bgColor=p.bg;globalScale=p.scale;globalOpacity=p.opacity;globalWarp=p.warp??0;globalAngle=p.angle??0;globalBlur=p.blur??0;dots=p.dots.map(d=>({...d,id:uid()}));dots.forEach(seedAmbientParams);if(p.noise!==undefined){noiseEnabled=p.noise;noiseOpacity=p.noiseOpacity??0.12;noiseSize=p.noiseSize??0.65;noiseBlend=p.noiseBlend??'overlay';noiseDensity=p.noiseDensity??1.0;syncNoiseControls();}activePresetIdx=idx;refineMode=false;activeDotId=null;syncControls();render();}
 function startEditPreset(idx){editingPresetIdx=idx;renderPresets();}
 function commitPresetRename(idx,name){const t=name.trim();if(t)presets[idx].name=t;editingPresetIdx=null;savePresetsToStorage();renderPresets();}
 function deletePreset(idx){const name=presets[idx].name;if(BUILTIN_PRESETS.some(bp=>bp.name===name)){const del=JSON.parse(localStorage.getItem('gstudio-deleted-builtins')||'[]');if(!del.includes(name)){del.push(name);localStorage.setItem('gstudio-deleted-builtins',JSON.stringify(del));}}presets.splice(idx,1);if(activePresetIdx===idx)activePresetIdx=null;else if(activePresetIdx!==null&&activePresetIdx>idx)activePresetIdx--;savePresetsToStorage();renderPresets();}
@@ -1112,7 +1113,7 @@ document.getElementById('animDurSlider').addEventListener('input',e=>{animDurati
 
 // Init
 document.getElementById('noiseKnobs').classList.add('knobs-disabled');
-['blendSelect','noiseOpacitySlider','noiseSizeSlider'].forEach(id=>document.getElementById(id).disabled=true);
+['blendSelect','noiseOpacitySlider','noiseSizeSlider','noiseDensitySlider'].forEach(id=>document.getElementById(id).disabled=true);
 window.addEventListener('resize',render);
 loadPresets();renderSizeChips();setMode(sessionStorage.getItem('gstudio-mode')||'consumer');initTimelineScrub();render();
 </script>
