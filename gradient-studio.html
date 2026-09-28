@@ -566,7 +566,34 @@ function pushHistory(){history.push(snapshotState());if(history.length>MAX_HIST)
 function undo(){if(!history.length)return;const s=history.pop();dots=s.dots;bgColor=s.bgColor;globalScale=s.globalScale;globalOpacity=s.globalOpacity;globalWarp=s.globalWarp;globalAngle=s.globalAngle;globalBlur=s.globalBlur??0;activeDotId=null;syncControls();render();}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeCodeModal();closeAdminModal();}if((e.metaKey||e.ctrlKey)&&e.key==='z'){e.preventDefault();undo();}if((e.key==='Delete'||e.key==='Backspace')&&activeDotId!==null&&e.target.tagName!=='INPUT'&&e.target.tagName!=='TEXTAREA'){e.preventDefault();removeDot(activeDotId);}});
 function copyCSS(){navigator.clipboard.writeText(generateCSS()).then(()=>{const btn=document.getElementById('modalCopyBtn');btn.textContent='Copied!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},1800);});}
-function downloadCSS(){const css=document.getElementById('cssOutput').textContent;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([css],{type:'text/css'}));a.download='gradient.css';a.click();URL.revokeObjectURL(a.href);}
+function generateHTMLExport(){
+  const css=document.getElementById('cssOutput').textContent;
+  return`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gradient</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #111; }
+.gradient-wrap { width: min(100vw, ${canvasW}px); aspect-ratio: ${canvasW} / ${canvasH}; }
+${css}
+</style>
+</head>
+<body>
+<div class="gradient-wrap">
+  <div class="gradient"></div>
+</div>
+</body>
+</html>`;
+}
+function downloadCSS(){
+  const html=generateHTMLExport();
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));
+  a.download='gradient.html';a.click();URL.revokeObjectURL(a.href);
+}
 
 // ── Export scale ──
 function setExportScale(n,btn){exportScale=n;document.querySelectorAll('.scale-btn').forEach(b=>b.classList.toggle('active',b===btn));}
